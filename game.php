@@ -35,13 +35,32 @@ class Game {
         }
     }
 
+    private function print_guessed_words() {
+        try { 
+            $str = '<div>';
+            
+            $stmt = $this->pdo->prepare("SELECT guess FROM player_guesses");
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if (empty($results)) {
+                return;
+            }
+            foreach (array_reverse($results) as $row) {
+                $str = $str . "<div>" . $row["guess"] . "</div>";
+            }
+            echo $str . "</div>";
+        } catch (PDOException $e) {
+            throw new PDOException($e->getMessage(), (int)$e->getCode());
+            die();
+        }
+        
+    }
+
     function process_guess($guess) {
         $guess = strtolower($guess);
-
         if (($this->check_win()) or (strlen($guess) != 5)) {
             return;
         }
-
         $colors = array();
         try { 
             $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM $this->table_name");
@@ -52,30 +71,28 @@ class Game {
                 $letter = $guess[$i];
                 
                 // First check if there are any words that don't contain that letter at all
-                $q = "SELECT COUNT(*) FROM $this->table_name WHERE word LIKE '%$letter%'";
+                $q = "SELECT COUNT(*) FROM $this->table_name WHERE word NOT LIKE '%$letter%'";
                 $stmt = $this->pdo->prepare($q);
                 $stmt->execute();
                 $count = $stmt->fetchColumn();
-                if ($count < $total_table_size) {
+                if ($count > 0) {
                     $q = "DELETE FROM $this->table_name WHERE word LIKE '%$letter%'";
                     $stmt = $this->pdo->prepare($q);
                     $stmt->execute();
                     array_push($colors, "grey");
-                    $total_table_size = $this->total_table_size(); # update the total table size
                     continue;
                 }
 
                 // Otherwise, check if there are any words that don't contain that letter in the ith position
-                $q = "SELECT COUNT(*) FROM $this->table_name WHERE SUBSTRING(word, 3, 1) != '$letter'";
+                $q = "SELECT COUNT(*) FROM $this->table_name WHERE SUBSTRING(word, $i+1, 1) != '$letter'";
                 $stmt = $this->pdo->prepare($q);
                 $stmt->execute();
                 $count = $stmt->fetchColumn();
-                if ($count < $total_table_size) {
-                    $q = "DELETE FROM $this->table_name WHERE SUBSTRING(word, 3, 1) != '$letter'";
+                if ($count > 0) {
+                    $q = "DELETE FROM $this->table_name WHERE SUBSTRING(word, $i+1, 1) = '$letter'";
                     $stmt = $this->pdo->prepare($q);
                     $stmt->execute();
-                    array_push($colors, "green");
-                    $total_table_size = $this->total_table_size(); # update the total table size
+                    array_push($colors, "yellow");
                     continue;
                 }
 
@@ -90,8 +107,11 @@ class Game {
                 $out_str = $out_str . "<font color='$color'>$letter</font>";
             }
             echo $out_str;
+            $this->print_guessed_words();
 
-
+            // Add the word to guessed words
+            $stmt = $this->pdo->prepare("INSERT INTO player_guesses (guess) VALUES ('$guess')");
+            $stmt->execute();
             
         } catch (PDOException $e) {
             throw new PDOException($e->getMessage(), (int)$e->getCode());
