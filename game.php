@@ -1,7 +1,6 @@
 <?php
 class Game {
     private $player_guesses;
-    private $num_correct_guesses;
     private $table_name;
     private $pdo;
     private $color_mapper;
@@ -17,10 +16,6 @@ class Game {
             "green" => "#32CD32",
             "yellow" => "#E4D00A"
         );
-    }
-
-    private function check_win() {
-        return $this->num_correct_guesses == 5;
     }
 
     private function total_table_size() {
@@ -46,7 +41,7 @@ class Game {
                 return;
             }
             foreach (array_reverse($results) as $row) {
-                $str = $str . "<div>" . $row["guess"] . "</div>";
+                $str = $str . '<div class="word-container">' . $row["guess"] . "</div>";
             }
             echo $str . "</div>";
         } catch (PDOException $e) {
@@ -58,7 +53,8 @@ class Game {
 
     function process_guess($guess) {
         $guess = strtolower($guess);
-        if (($this->check_win()) or (strlen($guess) != 5)) {
+        if (strlen($guess) != 5) {
+            echo "Invalid word";
             return;
         }
         $colors = array();
@@ -104,7 +100,7 @@ class Game {
             for ($i = 0; $i < 5; $i++) {
                 $color = $this->color_mapper[$colors[$i]];
                 $letter = $guess[$i];
-                $out_str = $out_str . "<font color='$color'>$letter</font>";
+                $out_str = $out_str . "<span style='color:$color;font-size:24px'>$letter</span>";
             }
             echo $out_str;
             $this->print_guessed_words();
