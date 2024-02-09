@@ -11,7 +11,11 @@
     <title>Document</title>
 </head>
 <body>
-    <form target="frame" action="index.php" method="post">
+    <form action="includes/reset_game.php" method="post">
+        <button type="submit">Start New Game</button>
+    </form>
+
+    <form action="index.php" method="post">
         <input type="text" name="user_guess">
     </form>
 
@@ -22,6 +26,6 @@
             // Do something with the data
         }
     ?>
-<iframe name="frame" style="display:none;"></iframe>
+
 </body>
 </html>
